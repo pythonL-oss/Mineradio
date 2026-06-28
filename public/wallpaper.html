@@ -82,6 +82,8 @@
       ctx.restore();
     }
     function draw(nowMs){
+      // 窗口隐藏时跳过渲染，降低 CPU/GPU 开销
+      if (document.hidden) { requestAnimationFrame(draw); return; }
       var now = nowMs * .001;
       ensureParticles();
       var opacity = Math.max(.35, Math.min(1, state.opacity || 1));

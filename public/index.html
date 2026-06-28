@@ -3671,6 +3671,13 @@ function applyRendererPowerMode() {
     if (renderer.renderLists && renderer.renderLists.dispose) renderer.renderLists.dispose();
     scheduleBackgroundCacheTrim();
   }
+  // 深度后台时暂停 GSAP 全局时间线，前台时恢复
+  try {
+    if (window.gsap && gsap.globalTimeline) {
+      if (deep) { gsap.globalTimeline.pause(); }
+      else { gsap.globalTimeline.resume(); }
+    }
+  } catch (e) {}
 }
 function updateDesktopRuntimeState(state) {
   state = state || {};
@@ -18416,6 +18423,13 @@ async function playQueueAt(idx, opts) {
   safeRenderQueuePanel('play-queue-at-switch', { scrollCurrent: miniQueueOpen });
   safePlaybackStep('shelf-preview-suppress', suppressShelfPreviewForPlaybackSwitch);
   pauseCurrentAudioForTrackSwitch();
+  // 切歌时主动清理上一首歌的歌词 DOM、粒子实例和音频状态，避免内存碎片
+  safePlaybackStep('cleanup-prev-track', function(){
+    try { clearStageLyrics(); } catch (e) {}
+    try { resetAudioVisualState(); } catch (e) {}
+    // 释放上一首歌的音频 buffer
+    try { if (audio && audio.src) { audio.removeAttribute('src'); audio.load(); } } catch (e) {}
+  });
   var bmKey = safePlaybackStep('beatmap-key', function(){ return beatMapSongKey(song); }) || '';
   var podcastDjMode = !!safePlaybackStep('podcast-mode', function(){ return isPodcastSong(song); });
   safePlaybackStep('dj-mode', function(){ setDjModeActive(podcastDjMode, song); });
